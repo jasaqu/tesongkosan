@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ongkos Muatan Mobil</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1a1d21;--muted:#6b7280;--line:#e5e7eb;--accent:#1d6fe0;--accent-t:#fff;--danger:#d93b3b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111317;--card:#1b1e24;--text:#eceef1;--muted:#9aa1ad;--line:#2b2f37;--accent:#4d93f5;--accent-t:#0b1220;--danger:#f07070}}
+:root[data-theme="dark"]{--bg:#111317;--card:#1b1e24;--text:#eceef1;--muted:#9aa1ad;--line:#2b2f37;--accent:#4d93f5;--accent-t:#0b1220;--danger:#f07070}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px}
+.wrap{max-width:560px;margin:0 auto;padding:0 14px 90px}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:14px 0 10px;z-index:5}
+h1{font-size:20px;margin:0 0 10px}
+.search{width:100%;padding:12px 14px;font-size:16px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);outline:none}
+.search:focus{border-color:var(--accent)}
+.count{font-size:13px;color:var(--muted);margin:8px 2px 0}
+.item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px;margin-top:8px}
+.item .n{flex:1;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.item .p{font-weight:700;color:var(--accent);white-space:nowrap}
+.item .k{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:2px}
+.ico{border:0;background:none;color:var(--muted);font-size:18px;padding:4px 6px;cursor:pointer}
+.ico.del:hover{color:var(--danger)}
+.empty{text-align:center;color:var(--muted);padding:40px 0}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--accent);color:var(--accent-t);border:0;border-radius:28px;padding:14px 20px;font-size:16px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}
+dialog{border:0;border-radius:16px;padding:18px;width:min(92vw,400px);background:var(--card);color:var(--text)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h2{margin:0 0 12px;font-size:18px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input.f{width:100%;padding:11px 12px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+.row{display:flex;gap:8px;margin-top:16px}
+.row button{flex:1;padding:12px;border-radius:10px;font-size:16px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer}
+.row .ok{background:var(--accent);color:var(--accent-t);border-color:var(--accent)}
+.note{font-size:12px;color:var(--muted);margin-top:14px;text-align:center}
+.login{display:grid;grid-template-columns:1fr;gap:14px;max-width:380px;margin:40px auto;padding:20px;background:var(--card);border:1px solid var(--line);border-radius:16px}
+.login h2{margin:0;font-size:20px}
+.login label{margin:0 0 4px}
+.login button{width:100%;padding:12px;border-radius:10px;font-size:16px;font-weight:600;border:0;background:var(--accent);color:var(--accent-t);cursor:pointer}
+.login .err{color:var(--danger);font-size:13px;margin:0}
+.login .err:empty{display:none}
+.status{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:13px;color:var(--muted);margin-top:8px}
+.status .sp{flex:1}
+.status button{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<form class="login" id="loginForm" hidden>
+  <h2>Masuk</h2>
+  <div><label for="lemail">Email</label><input id="lemail" class="f" type="email" required autocomplete="username"></div>
+  <div><label for="lpass">Kata sandi</label><input id="lpass" class="f" type="password" required autocomplete="current-password"></div>
+  <p class="err" id="loginErr" role="alert"></p>
+  <button type="submit">Masuk</button>
+</form>
+<div id="app">
+<div class="wrap">
+<header>
+<h1>🚚 Ongkos Muatan Mobil</h1>
+<input id="q" class="search" type="search" placeholder="Cari daerah atau kabupaten…" autocomplete="off">
+<div class="count" id="count"></div>
+<div class="status" id="status" hidden>
+  <span id="who"></span><span id="sync"></span><span class="sp"></span>
+  <button type="button" id="legacyBtn" hidden></button>
+  <button type="button" id="logout">Keluar</button>
+</div>
+</header>
+<div id="list"></div>
+<div class="note" id="note">Data awal hanyalah contoh. Ketuk ✏️ untuk mengubah, atau tambah daerah baru.</div>
+</div>
+<button class="fab" id="add">+ Tambah</button>
+
+<dialog id="dlg">
+<h2 id="dt">Tambah Daerah</h2>
+<label for="nm">Nama daerah</label>
+<input id="nm" class="f" type="text" autocomplete="off">
+<label for="kb">Kabupaten</label>
+<input id="kb" class="f" type="text" autocomplete="off">
+<label for="pr">Ongkos mobil (Rp)</label>
+<input id="pr" class="f" type="number" inputmode="numeric" min="0">
+<div class="row"><button id="cancel">Batal</button><button class="ok" id="save">Simpan</button></div>
+</dialog>
+</div>
+
+<script>
+// ===== ISI DENGAN KONFIGURASI SUPABASE ANDA (sama dengan pembukuan) =====
+var SB_URL="ISI_PROJECT_URL";
+var SB_KEY="ISI_PUBLISHABLE_KEY";
+// ========================================================================
+var KEY="ongkos-muatan-v1";
+var DEFAULT=[
+{n:"Jakarta",k:"Kota Jakarta Pusat",p:350000},{n:"Cibinong",k:"Kab. Bogor",p:450000},{n:"Depok",k:"Kota Depok",p:400000},{n:"Tigaraksa",k:"Kab. Tangerang",p:400000},
+{n:"Cikarang",k:"Kab. Bekasi",p:380000},{n:"Soreang",k:"Kab. Bandung",p:850000},{n:"Sumber",k:"Kab. Cirebon",p:1300000},{n:"Ungaran",k:"Kab. Semarang",p:2000000},
+{n:"Sleman",k:"Kab. Sleman",p:2400000},{n:"Sidoarjo",k:"Kab. Sidoarjo",p:3200000}];
+var configured=SB_URL.indexOf("ISI_")!==0&&SB_KEY.indexOf("ISI_")!==0;
+var cloud=configured&&typeof supabase!=="undefined";
+var sb,uid=null,chan=null,editing=null;
+var $=function(id){return document.getElementById(id)};
+function fail(e){alert("Gagal menyimpan ke online: "+((e&&e.message)||e))}
+function hash(str){var h=5381;for(var i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))>>>0;return h}
+function legId(x){return 1000000000000+hash(x.n+"|"+(x.k||"")+"|"+x.p)}
+function clean(d){return{id:+d.id,n:d.n||"",k:d.k||"",p:+d.p||0}}
+function legacyList(){try{var s=localStorage.getItem(KEY);if(!s)return[];var a=JSON.parse(s);if(!Array.isArray(a))return[];
+ return a.filter(function(x){return x&&x.n}).map(function(x){return{id:x.id||legId(x),n:x.n,k:x.k||"",p:+x.p||0}})}catch(e){return[]}}
+var data=cloud?[]:load();
+function load(){var a=legacyList();if(a.length||localStorage.getItem(KEY)!==null)return a;return DEFAULT.map(function(x,i){return{id:1000000000000+i,n:x.n,k:x.k,p:x.p}})}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+function byId(id){return data.filter(function(x){return x.id===id})[0]}
+function rp(n){return "Rp "+Number(n).toLocaleString("id-ID")}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function render(){
+ var t=$("q").value.trim().toLowerCase();
+ var rows=data.filter(function(d){return (d.n+" "+(d.k||"")).toLowerCase().indexOf(t)>-1})
+  .sort(function(a,b){return a.n.localeCompare(b.n,"id")});
+ $("count").textContent=rows.length+" dari "+data.length+" daerah";
+ $("list").innerHTML=rows.length?rows.map(function(d){
+  return '<div class="item"><span class="n">'+esc(d.n)+(d.k?'<span class="k">'+esc(d.k)+'</span>':'')+'</span><span class="p">'+rp(d.p)+'</span>'+
+  '<button class="ico" data-e="'+d.id+'" aria-label="Ubah">✏️</button><button class="ico del" data-d="'+d.id+'" aria-label="Hapus">🗑️</button></div>'
+ }).join(""):'<div class="empty">'+(data.length?"Daerah tidak ditemukan.":"Belum ada data. Ketuk + Tambah.")+'</div>';
+}
+var dlg=$("dlg"),nm=$("nm"),kb=$("kb"),pr=$("pr");
+function openDlg(id){editing=id;var d=id===null?null:byId(id);$("dt").textContent=d?"Ubah Data":"Tambah Daerah";
+ nm.value=d?d.n:"";kb.value=d?(d.k||""):"";pr.value=d?d.p:"";dlg.showModal();nm.focus()}
+$("add").onclick=function(){openDlg(null)};
+$("cancel").onclick=function(){dlg.close()};
+$("save").onclick=function(){
+ var n=nm.value.trim(),k=kb.value.trim(),p=parseInt(pr.value,10);
+ if(!n||isNaN(p)||p<0){return}
+ var r={id:editing===null?Date.now():editing,n:n,k:k,p:p};
+ if(cloud){upsertCloud(r)}
+ else{if(editing===null)data.push(r);else data=data.map(function(x){return x.id===editing?r:x});persist();render()}
+ dlg.close();
+};
+$("q").oninput=render;
+$("list").onclick=function(e){
+ var b=e.target.closest("button");if(!b)return;
+ if(b.dataset.e!==undefined)openDlg(+b.dataset.e);
+ else if(b.dataset.d!==undefined){var id=+b.dataset.d,d=byId(id);if(d&&confirm("Hapus "+d.n+"?")){
+  if(cloud){sb.from("ongkosan").delete().eq("id",id).then(function(res){if(res.error)fail(res.error);else loadCloud()})}
+  else{data=data.filter(function(x){return x.id!==id});persist();render()}}}
+};
+
+function checkLegacy(){
+ var ids={};data.forEach(function(d){ids[d.id]=1});
+ var done=false;try{done=localStorage.getItem(KEY+"-uploaded")==="1"}catch(e){}
+ var n=done?0:legacyList().filter(function(x){return !ids[x.id]}).length;
+ $("legacyBtn").hidden=!n;$("legacyBtn").textContent="Unggah "+n+" data lama dari HP ini";
+}
+function loadCloud(){
+ var all=[],from=0,step=1000;
+ function next(){return sb.from("ongkosan").select("*").order("id").range(from,from+step-1).then(function(res){
+  if(res.error)throw res.error;all=all.concat(res.data);
+  if(res.data.length===step){from+=step;return next()}return all})}
+ return next().then(function(rows){data=rows.map(clean);$("sync").textContent="· tersinkron";render();checkLegacy()})
+  .catch(function(e){$("sync").textContent="· gagal sinkron ("+((e&&e.message)||e)+")"});
+}
+function upsertCloud(r){sb.from("ongkosan").upsert(r).then(function(res){if(res.error)fail(res.error);else loadCloud()})}
+function onSession(session){
+ if(chan){sb.removeChannel(chan);chan=null}
+ if(session){
+  uid=session.user.id;
+  $("loginForm").hidden=true;$("app").hidden=false;$("status").hidden=false;
+  $("who").textContent=session.user.email;$("sync").textContent="· menyinkronkan…";
+  loadCloud();
+  chan=sb.channel("ongkosan-"+uid).on("postgres_changes",{event:"*",schema:"public",table:"ongkosan"},function(){loadCloud()}).subscribe();
+ }else{
+  uid=null;data=[];$("app").hidden=true;$("status").hidden=true;$("loginForm").hidden=false;render();
+ }
+}
+function initCloud(){
+ sb=supabase.createClient(SB_URL,SB_KEY);
+ $("app").hidden=true;$("note").textContent="Ketuk ✏️ untuk mengubah, atau tambah daerah baru.";
+ sb.auth.onAuthStateChange(function(ev,session){if(session&&uid===session.user.id)return;onSession(session)});
+ document.addEventListener("visibilitychange",function(){if(!document.hidden&&uid)loadCloud()});
+ $("loginForm").addEventListener("submit",function(e){
+  e.preventDefault();$("loginErr").textContent="";
+  sb.auth.signInWithPassword({email:$("lemail").value.trim(),password:$("lpass").value}).then(function(res){
+   if(res.error)$("loginErr").textContent="Email atau kata sandi salah."});
+ });
+ $("logout").addEventListener("click",function(){sb.auth.signOut()});
+ $("legacyBtn").addEventListener("click",function(){
+  var ids={};data.forEach(function(d){ids[d.id]=1});
+  var list=legacyList().filter(function(x){return !ids[x.id]}).map(clean);
+  var jobs=[];for(var i=0;i<list.length;i+=500)jobs.push(sb.from("ongkosan").upsert(list.slice(i,i+500)));
+  Promise.all(jobs).then(function(rs){
+   for(var k=0;k<rs.length;k++)if(rs[k].error){fail(rs[k].error);return}
+   try{localStorage.setItem(KEY+"-uploaded","1")}catch(e){}
+   loadCloud();
+  });
+ });
+}
+if(configured&&!cloud){alert("Gagal memuat Supabase. Periksa koneksi internet lalu muat ulang halaman.")}
+if(cloud){initCloud()}
+render();
+</script>
+</body>
+</html>
